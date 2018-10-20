@@ -1,9 +1,9 @@
 module.exports = function(services){
-	async function hello(ctx){
-		ctx.body = await services.hello();
+	async function init(ctx){
+		ctx.body = await services.init({});
 	}
 
 	return {
-		hello,
+		init,
 	};
 };

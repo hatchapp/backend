@@ -1,0 +1,8 @@
+module.exports = {
+	REGISTER_STATUS: {
+		UNKNOWN: 0,
+		UNREGISTERED: 1,
+		REGISTERED: 2,
+	},
+	DEFAULT_TOKEN_EXPIRE: 3 * 60 * 60
+};
