@@ -1,0 +1,30 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "The backend project for the hatchapp",
+  "main": "bin/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/hatchapp/backend.git"
+  },
+  "keywords": [
+    "hatchapp",
+    "backend",
+    "jwt"
+  ],
+  "author": "Yengas",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hatchapp/backend/issues"
+  },
+  "homepage": "https://github.com/hatchapp/backend#readme",
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "koa": "^2.5.3",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0"
+  }
+}
