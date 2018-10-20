@@ -18,6 +18,19 @@ async function createAuthDatabase({ connectionString }){
 	return client.db();
 }
 
+// error handling and response formatting
+app.use(async function(ctx, next){
+	try{
+		await next();
+
+		if(ctx.status === 200)
+			ctx.body = JSON.stringify({ result: { success: true }, data: ctx.body });
+	}catch(err){
+		ctx.status = err.status;
+		ctx.body = JSON.stringify({ result: { success: false, reason: err.message }, data: {} });
+		ctx.app.emit('error', err, ctx);
+	}
+});
 // parse the request json bodies
 app.use(BodyParser());
 

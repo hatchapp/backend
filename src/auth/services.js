@@ -1,24 +1,5 @@
-const { sign } = require('jsonwebtoken');
 const sillyName = require('sillyname');
-const { DEFAULT_TOKEN_EXPIRE, REGISTER_STATUS } = require('./constants');
-
-function createTokenFunctions(
-	{
-		expiresIn = DEFAULT_TOKEN_EXPIRE,
-		secret,
-	}
-){
-	function tokenGenerate({ version, name, register_status: status, _id, createdAt }){
-		const payload = {
-			id: _id.toString(),
-			version, name, status, createdAt
-		};
-
-		return sign(payload, secret, { expiresIn });
-	}
-
-	return { tokenGenerate };
-}
+const { REGISTER_STATUS } = require('./constants');
 
 function createEmptyAuthWithMeta(meta){
 	return {
@@ -35,18 +16,18 @@ function createEmptyAuthWithMeta(meta){
  * Services that may be used by the backend auth controllers
  * @param config
  * @param database {Db}
+ * @param tokenGenerate
  * @returns {{hello: (function(): string)}}
  */
-module.exports = function(config, database){
+module.exports = function(config, database, { tokenGenerate }){
 	const tokenCol = database.collection(config.collection);
-	const { tokenGenerate } = createTokenFunctions(config);
 
 	async function init(meta){
 		const doc = createEmptyAuthWithMeta(meta);
 
 		await tokenCol.insertOne(doc);
 
-		return tokenGenerate(doc);
+		return { token: tokenGenerate(doc) };
 	}
 
 	return {
