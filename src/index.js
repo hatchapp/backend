@@ -26,7 +26,7 @@ app.use(async function(ctx, next){
 		if(ctx.status === 200)
 			ctx.body = JSON.stringify({ result: { success: true }, data: ctx.body });
 	}catch(err){
-		ctx.status = err.status;
+		ctx.status = err.status || 500;
 		ctx.body = JSON.stringify({ result: { success: false, reason: err.message }, data: {} });
 		ctx.app.emit('error', err, ctx);
 	}

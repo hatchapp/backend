@@ -17,8 +17,8 @@ function createTokenFunctions(
 		return sign(payload, secret, { expiresIn });
 	}
 
-	function tokenValidate(tokenString){
-		return verify(tokenString, secret);
+	function tokenValidate(tokenString, options = {}){
+		return verify(tokenString, secret, options);
 	}
 
 	return { tokenGenerate, tokenValidate };
@@ -31,7 +31,7 @@ module.exports = function(config, database){
 	const controllers = require('./controllers')(services, jwtFunctions);
 
 	// jwt token parsing middleware
-	auth.use(async function tokenController(ctx, next){
+	auth.use(['/init', '/register', '/refresh'], async function tokenController(ctx, next){
 		const { authorization } = ctx.request.header;
 		if(!authorization) return next();
 
@@ -39,19 +39,29 @@ module.exports = function(config, database){
 			const [ headerKey, tokenString ] = authorization.trim().split(' ');
 			if(headerKey !== 'Bearer') return ctx.throw(400, 'invalid authorization header key');
 
-			try{
-				ctx.auth = jwtFunctions.tokenValidate(tokenString);
-				return next();
-			}catch(err){
-				return ctx.throw(401, err);
-			}
+			ctx.token = tokenString;
+			return next();
 		}catch(err){
 			return ctx.throw(500, err);
 		}
 	});
 
+	// jwt token validating
+	auth.use(['/init', '/register'], async function authController(ctx, next){
+		if(!ctx.token) return next();
+
+		try{
+			ctx.auth = jwtFunctions.tokenValidate(ctx.token);
+			return next();
+		}catch(err){
+			return ctx.throw(401, err);
+		}
+	});
+
 	auth.get('/init', controllers.init);
 	auth.post('/register', controllers.register);
+	auth.post('/login', controllers.login);
+	auth.get('/refresh', controllers.refresh);
 
 	return { router: auth };
 };
