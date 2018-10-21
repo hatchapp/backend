@@ -13,9 +13,13 @@ function createControllerWithSchemaValidation(schema, originalController){
 	}
 }
 
+const passwordSchema = Joi.string().min(4).required();
 const usernameAndPasswordSchema = Joi.object().keys({
 	name: Joi.string().trim().min(1).required(),
-	password: Joi.string().min(4).required(),
+	password: passwordSchema,
+});
+const changeSchema = usernameAndPasswordSchema.append({
+	newPassword: passwordSchema,
 });
 
 module.exports = function(services, { tokenGenerate, tokenValidate }){
@@ -50,10 +54,21 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 		ctx.body = await services.refresh(auth.id, auth.status, auth.version);
 	};
 
+	const change = createControllerWithSchemaValidation(changeSchema, async function(ctx){
+		const { name, password, newPassword } = ctx.request.body;
+		const { id, version } = ctx.auth;
+
+		if(password.trim() === newPassword.trim())
+			throw new Error('passwords cannot be the same');
+
+		ctx.body = await services.change(id, version, name, password, newPassword);
+	});
+
 	return {
 		init,
 		register,
 		login,
 		refresh,
+		change,
 	};
 };

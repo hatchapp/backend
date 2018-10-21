@@ -61,6 +61,7 @@ module.exports = function(config, database, { tokenGenerate }){
 					password: hash(password),
 					register_status: REGISTER_STATUS.REGISTERED,
 					version: Date.now(),
+					updatedAt: Date.now(),
 				},
 			},
 			{ returnOriginal: false }
@@ -73,7 +74,10 @@ module.exports = function(config, database, { tokenGenerate }){
 	}
 
 	async function login(name, password){
-		const doc = await tokenCol.findOne({ name });
+		const { value: doc } = await tokenCol.findOneAndUpdate(
+			{ name },
+			{ $set: { lastLoginTry: Date.now() } }
+		);
 
 		if(!doc)
 			throw new Error('this name is not registered');
@@ -85,16 +89,53 @@ module.exports = function(config, database, { tokenGenerate }){
 	}
 
 	async function refresh(id, status, version){
-		const doc = await tokenCol.findOne({
-			_id: ObjectId(id),
-			register_status: status,
-			version,
-		});
+		const { value: doc } = await tokenCol.findOneAndUpdate(
+			{
+				_id: ObjectId(id),
+				register_status: status,
+				version,
+			},
+			{ $set: { lastRefresh: Date.now() } }
+		);
 
 		if(!doc)
-			throw new Error('this token cannot be refreshed, please login');
+			throw new Error('this token cannot be refreshed, please re-login');
 
 		return { token: tokenGenerate(doc) };
+	}
+
+	async function change(id, version, name, password, newPassword){
+		const oid = ObjectId(id);
+		const isUnique = (await tokenCol.countDocuments({ name, _id: { $ne: oid }})) === 0;
+
+		if(!isUnique)
+			throw new Error('this name is already in use by another player');
+
+		const doc = await tokenCol.findOne({ _id: oid });
+
+		if(!doc || !compare(password, doc.password))
+			throw new Error('could not find the token or the password is wrong');
+
+		if(doc && compare(newPassword, doc.password))
+			throw new Error('password could not be the same');
+
+		const { value: newDoc } = await tokenCol.findOneAndUpdate(
+			{ _id: oid, register_status: REGISTER_STATUS.REGISTERED, version },
+			{
+				$set: {
+					name,
+					password: hash(newPassword),
+					updatedAt: Date.now(),
+					version: Date.now(),
+				},
+			},
+			{ returnOriginal: false }
+		);
+
+		if(!newDoc)
+			throw new Error('could not update the password please re-login');
+
+		return { token: tokenGenerate(newDoc) };
 	}
 
 	return {
@@ -102,5 +143,6 @@ module.exports = function(config, database, { tokenGenerate }){
 		register,
 		login,
 		refresh,
+		change,
 	};
 };

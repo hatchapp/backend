@@ -31,7 +31,7 @@ module.exports = function(config, database){
 	const controllers = require('./controllers')(services, jwtFunctions);
 
 	// jwt token parsing middleware
-	auth.use(['/init', '/register', '/refresh'], async function tokenController(ctx, next){
+	auth.use(async function tokenController(ctx, next){
 		const { authorization } = ctx.request.header;
 		if(!authorization) return next();
 
@@ -47,7 +47,7 @@ module.exports = function(config, database){
 	});
 
 	// jwt token validating
-	auth.use(['/init', '/register'], async function authController(ctx, next){
+	auth.use(['/init', '/register', '/change'], async function authController(ctx, next){
 		if(!ctx.token) return next();
 
 		try{
@@ -62,6 +62,7 @@ module.exports = function(config, database){
 	auth.post('/register', controllers.register);
 	auth.post('/login', controllers.login);
 	auth.get('/refresh', controllers.refresh);
+	auth.post('/change', controllers.change);
 
 	return { router: auth };
 };
