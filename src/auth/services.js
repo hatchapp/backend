@@ -3,12 +3,23 @@ const { ObjectId } = require('mongodb');
 const sillyName = require('sillyname');
 const { DEFAULT_HASH_ROUND, REGISTER_STATUS } = require('./constants');
 
+function uniqueName(name){
+	return name.toLowerCase();
+}
+
+function getNameFields(name){
+	return {
+		name,
+		unique_name: uniqueName(name),
+	};
+}
+
 function createEmptyAuthWithMeta(meta){
 	return {
+		...getNameFields(sillyName()),
 		createdAt: Date.now(),
 		updatedAt: Date.now(),
 		version: Date.now(),
-		name: sillyName(),
 		register_status: REGISTER_STATUS.UNREGISTERED,
 		meta,
 	};
@@ -48,7 +59,9 @@ module.exports = function(config, database, { tokenGenerate }){
 
 	async function register(id, name, password){
 		const oid = ObjectId(id);
-		const isUnique = (await tokenCol.countDocuments({ name })) === 0;
+		const isUnique = (
+			await tokenCol.countDocuments({ unique_name: uniqueName(name) })
+		) === 0;
 
 		if(!isUnique)
 			throw new Error('this name is already in use');
@@ -57,7 +70,7 @@ module.exports = function(config, database, { tokenGenerate }){
 			{ _id: oid, register_status: REGISTER_STATUS.UNREGISTERED },
 			{
 				$set: {
-					name,
+					...getNameFields(name),
 					password: hash(password),
 					register_status: REGISTER_STATUS.REGISTERED,
 					version: Date.now(),
@@ -75,7 +88,7 @@ module.exports = function(config, database, { tokenGenerate }){
 
 	async function login(name, password){
 		const { value: doc } = await tokenCol.findOneAndUpdate(
-			{ name },
+			{ unique_name: uniqueName(name) },
 			{ $set: { lastLoginTry: Date.now() } }
 		);
 
@@ -106,7 +119,9 @@ module.exports = function(config, database, { tokenGenerate }){
 
 	async function change(id, version, name, password, newPassword){
 		const oid = ObjectId(id);
-		const isUnique = (await tokenCol.countDocuments({ name, _id: { $ne: oid }})) === 0;
+		const isUnique = (
+			await tokenCol.countDocuments({ unique_name: uniqueName(name), _id: { $ne: oid }})
+		) === 0;
 
 		if(!isUnique)
 			throw new Error('this name is already in use by another player');
@@ -123,7 +138,7 @@ module.exports = function(config, database, { tokenGenerate }){
 			{ _id: oid, register_status: REGISTER_STATUS.REGISTERED, version },
 			{
 				$set: {
-					name,
+					...getNameFields(name),
 					password: hash(newPassword),
 					updatedAt: Date.now(),
 					version: Date.now(),
