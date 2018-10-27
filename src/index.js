@@ -27,6 +27,7 @@ app.use(async function(ctx, next){
 			ctx.body = JSON.stringify({ result: { success: true }, data: ctx.body });
 	}catch(err){
 		ctx.status = err.status || 500;
+		ctx.set('Content-Type', 'application/json; charset=utf-8');
 		ctx.body = JSON.stringify({ result: { success: false, reason: err.message }, data: {} });
 		ctx.app.emit('error', err, ctx);
 	}
