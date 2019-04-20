@@ -21,12 +21,12 @@ const usernameAndPasswordSchema = Joi.object().keys({
 	password: passwordSchema,
 });
 const changeSchema = usernameAndPasswordSchema.append({
-	newPassword: passwordSchema,
+	new_password: passwordSchema,
 });
 
 const formatAuth = pipe(
 	pick(['_id', 'name', 'createdAt', 'updatedAt', 'version', 'register_status', 'meta']),
-	renameKeys({ _id: 'id' }),
+	renameKeys({ _id: 'id', updatedAt: 'updated_at', createdAt: 'created_at' }),
 );
 
 function formatTokenAndAuth({ token, auth }) {
@@ -66,7 +66,7 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 	};
 
 	const change = createControllerWithSchemaValidation(changeSchema, async function(ctx){
-		const { name, password, newPassword } = ctx.request.body;
+		const { name, password, new_password: newPassword } = ctx.request.body;
 		const { id, version } = ctx.auth;
 
 		if(password.trim() === newPassword.trim())

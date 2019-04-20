@@ -62,7 +62,7 @@ module.exports = function(config, database){
 	auth.post('/register', controllers.register);
 	auth.post('/login', controllers.login);
 	auth.get('/refresh', controllers.refresh);
-	auth.post('/change', controllers.change);
+	auth.patch('/change', controllers.change);
 
 	return { router: auth };
 };
