@@ -1,3 +1,5 @@
+const { pick, pipe } = require('ramda');
+const { renameKeys } = require('ramda-adjunct');
 const Joi = require('joi');
 
 function createControllerWithSchemaValidation(schema, originalController){
@@ -22,12 +24,21 @@ const changeSchema = usernameAndPasswordSchema.append({
 	newPassword: passwordSchema,
 });
 
+const formatAuth = pipe(
+	pick(['_id', 'name', 'createdAt', 'updatedAt', 'version', 'register_status', 'meta']),
+	renameKeys({ _id: 'id' }),
+);
+
+function formatTokenAndAuth({ token, auth }) {
+	return { token, auth: formatAuth(auth) };
+}
+
 module.exports = function(services, { tokenGenerate, tokenValidate }){
 	async function init(ctx){
 		const meta = ctx.auth
 			? { parent: ctx.auth.id }
 			: {};
-		ctx.body = await services.init(meta);
+		ctx.body = formatTokenAndAuth(await services.init(meta));
 	}
 
 	const register = createControllerWithSchemaValidation(usernameAndPasswordSchema, async function(ctx){
@@ -36,13 +47,13 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 		}
 		const { name, password } = ctx.request.body;
 
-		ctx.body = await services.register(ctx.auth.id, name, password);
+		ctx.body = formatTokenAndAuth(await services.register(ctx.auth.id, name, password));
 	});
 
 	const login = createControllerWithSchemaValidation(usernameAndPasswordSchema, async function(ctx){
 		const { name, password } = ctx.request.body;
 
-		ctx.body = await services.login(name, password);
+		ctx.body = formatTokenAndAuth(await services.login(name, password));
 	});
 
 	const refresh = async function(ctx){
@@ -51,7 +62,7 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 
 		const auth = tokenValidate(ctx.token, { ignoreExpiration: true });
 
-		ctx.body = await services.refresh(auth.id, auth.status, auth.version);
+		ctx.body = formatTokenAndAuth(await services.refresh(auth.id, auth.status, auth.version));
 	};
 
 	const change = createControllerWithSchemaValidation(changeSchema, async function(ctx){
@@ -61,7 +72,7 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 		if(password.trim() === newPassword.trim())
 			throw new Error('passwords cannot be the same');
 
-		ctx.body = await services.change(id, version, name, password, newPassword);
+		ctx.body = formatTokenAndAuth(await services.change(id, version, name, password, newPassword));
 	});
 
 	return {

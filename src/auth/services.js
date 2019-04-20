@@ -54,7 +54,7 @@ module.exports = function(config, database, { tokenGenerate }){
 
 		await tokenCol.insertOne(doc);
 
-		return { token: tokenGenerate(doc) };
+		return { token: tokenGenerate(doc), auth: doc };
 	}
 
 	async function register(id, name, password){
@@ -83,7 +83,7 @@ module.exports = function(config, database, { tokenGenerate }){
 		if(!doc)
 			throw new Error('could not find an unregistered token document');
 
-		return { token: tokenGenerate(doc) };
+		return { token: tokenGenerate(doc), auth: doc };
 	}
 
 	async function login(name, password){
@@ -98,7 +98,7 @@ module.exports = function(config, database, { tokenGenerate }){
 		if(!compare(password, doc.password))
 			throw new Error('wrong password for the name');
 
-		return { token: tokenGenerate(doc) };
+		return { token: tokenGenerate(doc), auth: doc };
 	}
 
 	async function refresh(id, status, version){
@@ -114,7 +114,7 @@ module.exports = function(config, database, { tokenGenerate }){
 		if(!doc)
 			throw new Error('this token cannot be refreshed, please re-login');
 
-		return { token: tokenGenerate(doc) };
+		return { token: tokenGenerate(doc), auth: doc };
 	}
 
 	async function change(id, version, name, password, newPassword){
@@ -150,7 +150,7 @@ module.exports = function(config, database, { tokenGenerate }){
 		if(!newDoc)
 			throw new Error('could not update the password please re-login');
 
-		return { token: tokenGenerate(newDoc) };
+		return { token: tokenGenerate(newDoc), auth: doc };
 	}
 
 	return {

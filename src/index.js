@@ -24,7 +24,7 @@ app.use(async function(ctx, next){
 		await next();
 
 		if(ctx.status === 200)
-			ctx.body = JSON.stringify({ result: { success: true }, data: ctx.body });
+			ctx.body = JSON.stringify(ctx.body);
 	}catch(err){
 		ctx.status = err.status || 500;
 		ctx.set('Content-Type', 'application/json; charset=utf-8');
