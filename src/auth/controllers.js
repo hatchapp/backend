@@ -35,10 +35,15 @@ function formatTokenAndAuth({ token, auth }) {
 
 module.exports = function(services, { tokenGenerate, tokenValidate }){
 	async function init(ctx){
-		const meta = ctx.auth
-			? { parent: ctx.auth.id }
-			: {};
-		ctx.body = formatTokenAndAuth(await services.init(meta));
+		const meta = {};
+
+		// if there is auth, refresh, otherwise init anonymous user
+		if (ctx.auth) {
+			const { id, status, version } = ctx.auth;
+			ctx.body = formatTokenAndAuth(await services.refresh(id, status, version, meta))
+		} else {
+			ctx.body = formatTokenAndAuth(await services.init(meta));
+		}
 	}
 
 	const register = createControllerWithSchemaValidation(usernameAndPasswordSchema, async function(ctx){
@@ -51,9 +56,9 @@ module.exports = function(services, { tokenGenerate, tokenValidate }){
 	});
 
 	const login = createControllerWithSchemaValidation(usernameAndPasswordSchema, async function(ctx){
-		const { name, password } = ctx.request.body;
+		const { name, password, meta } = ctx.request.body;
 
-		ctx.body = formatTokenAndAuth(await services.login(name, password));
+		ctx.body = formatTokenAndAuth(await services.login(name, password, meta));
 	});
 
 	const refresh = async function(ctx){

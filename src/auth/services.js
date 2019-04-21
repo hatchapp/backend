@@ -86,10 +86,15 @@ module.exports = function(config, database, { tokenGenerate }){
 		return { token: tokenGenerate(doc), auth: doc };
 	}
 
-	async function login(name, password){
+	async function login(name, password, meta){
 		const { value: doc } = await tokenCol.findOneAndUpdate(
 			{ unique_name: uniqueName(name) },
-			{ $set: { lastLoginTry: Date.now() } }
+			{
+				$set: Object.assign(
+					meta ? { meta } : {},
+					{ lastLoginTry: Date.now() }
+				),
+			},
 		);
 
 		if(!doc)
@@ -101,14 +106,19 @@ module.exports = function(config, database, { tokenGenerate }){
 		return { token: tokenGenerate(doc), auth: doc };
 	}
 
-	async function refresh(id, status, version){
+	async function refresh(id, status, version, meta){
 		const { value: doc } = await tokenCol.findOneAndUpdate(
 			{
 				_id: ObjectId(id),
 				register_status: status,
 				version,
 			},
-			{ $set: { lastRefresh: Date.now() } }
+			{
+				$set: Object.assign(
+					meta ? { meta } : {},
+					{ lastRefresh: Date.now() },
+				),
+			},
 		);
 
 		if(!doc)
